@@ -2,6 +2,23 @@
 
 set -e
 
+# --- BANNER ASCII HARDCODED ---
+clear
+cat << "EOF"
+ ██▓███   ▄▄▄       █    ██   ██████      ██████  ▄▄▄       ██▓  ▄▄▄█████▓ ▒█████  
+▓██░  ██▒▒████▄     ██  ▓██▒▒██    ▒    ▒██    ▒ ▒████▄    ▓██▒  ▓  ██▒ ▓▒▒██▒  ██▒
+▓██░ ██▓▒▒██  ▀█▄  ▓██  ▒██░░ ▓██▄      ░ ▓██▄   ▒██  ▀█▄  ▒██░  ▒ ▓██░ ▒░▒██░  ██▒
+▒██▄█▓▒ ▒░██▄▄▄▄██ ▓▓█  ░██░  ▒   ██▒     ▒   ██▒░██▄▄▄▄██ ▒██░  ░ ▓██▓ ░ ▒██   ██░
+▒██▒ ░  ░ ▓█   ▓██▒▒▒█████▓ ▒██████▒▒   ▒██████▒▒ ▓█   ▓██▒░██████▒▒██▒ ░ ░ ████▓▒░
+▒▓▒░ ░  ░ ▒▒   ▓▒█░░▒▓▒ ▒ ▒ ▒ ▒▓▒ ▒ ░   ▒ ▒▓▒ ▒ ░ ▒▒   ▓▒█░░ ▒░▓  ░▒ ░░   ░ ▒░▒░▒░ 
+░▒ ░       ▒   ▒▒ ░░░▒░ ░ ░ ░ ░▒  ░ ░   ░ ░▒  ░ ░  ▒   ▒▒ ░░ ░ ▒  ░  ░      ░ ▒ ▒░ 
+░░         ░   ▒    ░░░ ░ ░ ░  ░  ░     ░  ░  ░    ░   ▒     ░ ░   ░      ░ ░ ░ ▒  
+               ░  ░   ░           ░           ░        ░  ░    ░  ░           ░ ░                                        
+EOF
+echo "---------------------------------------------------------------"
+echo "                DATABASE STACK GENERATOR"
+echo "---------------------------------------------------------------"
+
 DB_NAME=$1
 DB_USER=${2:-postgres}
 DB_PASSWORD=${3:-postgres}
@@ -20,8 +37,10 @@ if [ -z "$DB_NAME" ]; then
   exit 1
 fi
 
-if [ -d "$DATA_DIR/$DB_NAME" ]; then
-  echo "Database '$DB_NAME' already exists"
+PROJECT_DIR="$DATA_DIR/$DB_NAME"
+
+if [ -d "$PROJECT_DIR" ]; then
+  echo "Error: Database '$DB_NAME' already exists in $DATA_DIR"
   exit 1
 fi
 
@@ -37,36 +56,51 @@ while ss -lnt | awk '{print $4}' | grep -q ":$MONGO_PORT$"; do
   MONGO_PORT=$((MONGO_PORT+1))
 done
 
-echo "Postgres port: $PG_PORT"
-echo "Mongo port: $MONGO_PORT"
+echo "Allocating Ports..."
+echo ">> Postgres port : $PG_PORT"
+echo ">> Mongo port    : $MONGO_PORT"
+echo ""
 
-mkdir -p "$DATA_DIR/$DB_NAME/postgres"
-mkdir -p "$DATA_DIR/$DB_NAME/mongo"
+# Buat folder project
+mkdir -p "$PROJECT_DIR/postgres"
+mkdir -p "$PROJECT_DIR/mongo"
 
-DB_NAME=$DB_NAME \
-DB_USER=$DB_USER \
-DB_PASSWORD=$DB_PASSWORD \
-PG_PORT=$PG_PORT \
-MONGO_PORT=$MONGO_PORT \
-MONGO_USER=$MONGO_USER \
-MONGO_PASSWORD=$MONGO_PASSWORD \
+# --- SIMPAN KREDENSIAL KE FILE .env ---
+ENV_FILE="$PROJECT_DIR/.env"
+cat << EOT > "$ENV_FILE"
+DB_NAME="$DB_NAME"
+DB_USER="$DB_USER"
+DB_PASSWORD="$DB_PASSWORD"
+PG_PORT="$PG_PORT"
+MONGO_USER="$MONGO_USER"
+MONGO_PASSWORD="$MONGO_PASSWORD"
+MONGO_PORT="$MONGO_PORT"
+CREATED_AT="$(date)"
+EOT
+
+echo "Credential saved to: $ENV_FILE"
+
+# Run Docker Compose dengan variabel yang sudah di-set
+export DB_NAME DB_USER DB_PASSWORD PG_PORT MONGO_USER MONGO_PASSWORD MONGO_PORT
+
 docker compose -p "db_$DB_NAME" up -d
 
 echo ""
-echo "Database stack created"
-echo "----------------------------------"
+echo "✅ Database stack '$DB_NAME' created successfully!"
+echo "---------------------------------------------------------------"
 
-echo "Postgres"
-echo "host : localhost"
-echo "port : $PG_PORT"
-echo "user : $DB_USER"
-echo "pass : $DB_PASSWORD"
-echo "db   : $DB_NAME"
+echo "🐘 POSTGRESQL"
+echo "   Host : localhost"
+echo "   Port : $PG_PORT"
+echo "   User : $DB_USER"
+echo "   Pass : $DB_PASSWORD"
+echo "   DB   : $DB_NAME"
 
 echo ""
 
-echo "MongoDB"
-echo "host : localhost"
-echo "port : $MONGO_PORT"
-echo "user : $MONGO_USER"
-echo "pass : $MONGO_PASSWORD"
+echo "🍃 MONGODB"
+echo "   Host : localhost"
+echo "   Port : $MONGO_PORT"
+echo "   User : $MONGO_USER"
+echo "   Pass : $MONGO_PASSWORD"
+echo "---------------------------------------------------------------"

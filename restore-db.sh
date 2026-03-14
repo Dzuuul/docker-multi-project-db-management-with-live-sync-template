@@ -1,5 +1,22 @@
 #!/bin/bash
 
+# --- BANNER ASCII HARDCODED ---
+clear
+cat << "EOF"
+ ██▓███   ▄▄▄       █    ██   ██████      ██████  ▄▄▄       ██▓  ▄▄▄█████▓ ▒█████  
+▓██░  ██▒▒████▄     ██  ▓██▒▒██    ▒    ▒██    ▒ ▒████▄    ▓██▒  ▓  ██▒ ▓▒▒██▒  ██▒
+▓██░ ██▓▒▒██  ▀█▄  ▓██  ▒██░░ ▓██▄      ░ ▓██▄   ▒██  ▀█▄  ▒██░  ▒ ▓██░ ▒░▒██░  ██▒
+▒██▄█▓▒ ▒░██▄▄▄▄██ ▓▓█  ░██░  ▒   ██▒     ▒   ██▒░██▄▄▄▄██ ▒██░  ░ ▓██▓ ░ ▒██   ██░
+▒██▒ ░  ░ ▓█   ▓██▒▒▒█████▓ ▒██████▒▒   ▒██████▒▒ ▓█   ▓██▒░██████▒▒██▒ ░ ░ ████▓▒░
+▒▓▒░ ░  ░ ▒▒   ▓▒█░░▒▓▒ ▒ ▒ ▒ ▒▓▒ ▒ ░   ▒ ▒▓▒ ▒ ░ ▒▒   ▓▒█░░ ▒░▓  ░▒ ░░   ░ ▒░▒░▒░ 
+░▒ ░       ▒   ▒▒ ░░░▒░ ░ ░ ░ ░▒  ░ ░   ░ ░▒  ░ ░  ▒   ▒▒ ░░ ░ ▒  ░  ░      ░ ▒ ▒░ 
+░░         ░   ▒    ░░░ ░ ░ ░  ░  ░     ░  ░  ░    ░   ▒     ░ ░   ░      ░ ░ ░ ▒  
+               ░  ░   ░           ░           ░        ░  ░    ░  ░           ░ ░  
+EOF
+echo "--------------------------------------------------------------------------------"
+echo "                    DATABASE STACK RESTORE UTILITY"
+echo "--------------------------------------------------------------------------------"
+
 PROJECT=$1
 TYPE=$2
 
@@ -12,35 +29,66 @@ function find_container() {
   echo "$match"
 }
 
+# Pengecekan argumen
+if [ -z "$PROJECT" ] || [ -z "$TYPE" ]; then
+  echo "Usage:"
+  echo "  ./restore-db.sh <project_name> <postgres|mongo>"
+  echo ""
+  exit 1
+fi
+
 if [ "$TYPE" == "postgres" ]; then
   CONTAINER=$(find_container "$PROJECT" "postgres")
-  if [ -z "$CONTAINER" ]; then echo "Postgres container not found for $PROJECT"; exit 1; fi
+  if [ -z "$CONTAINER" ]; then 
+    echo "❌ Error: Postgres container not found for $PROJECT"
+    exit 1 
+  fi
 
-  echo "Restoring PostgreSQL to $CONTAINER..."
+  if [ ! -f "$BACKUP_DIR/postgres.sql" ]; then
+    echo "❌ Error: Backup file $BACKUP_DIR/postgres.sql not found"
+    exit 1
+  fi
 
-  cat $BACKUP_DIR/postgres.sql | docker exec -i "$CONTAINER" \
-  psql -U $PROJECT -d $PROJECT
+  echo "🐘 Restoring PostgreSQL to $CONTAINER..."
 
-  echo "Restore complete"
+  cat "$BACKUP_DIR/postgres.sql" | docker exec -i "$CONTAINER" \
+  psql -U "$PROJECT" -d "$PROJECT"
+
+  echo "✅ Restore complete"
 
 elif [ "$TYPE" == "mongo" ]; then
   CONTAINER=$(find_container "$PROJECT" "mongo")
-  if [ -z "$CONTAINER" ]; then echo "Mongo container not found for $PROJECT"; exit 1; fi
+  if [ -z "$CONTAINER" ]; then 
+    echo "❌ Error: Mongo container not found for $PROJECT"
+    exit 1 
+  fi
 
-  echo "Restoring MongoDB to $CONTAINER..."
+  if [ ! -d "$BACKUP_DIR/dump" ]; then
+    echo "❌ Error: Backup directory $BACKUP_DIR/dump not found"
+    exit 1
+  fi
 
-  docker cp $BACKUP_DIR/dump "$CONTAINER":/dump
+  echo "🍃 Restoring MongoDB to $CONTAINER..."
 
+  # Menyalin data dump ke dalam container
+  docker cp "$BACKUP_DIR/dump" "$CONTAINER":/dump
+
+  # Menjalankan mongorestore
   docker exec "$CONTAINER" mongorestore \
-    --username $PROJECT \
-    --password $PROJECT \
+    --username "$PROJECT" \
+    --password "$PROJECT" \
     --authenticationDatabase admin \
-    --db $PROJECT \
-    /dump/$PROJECT
+    --db "$PROJECT" \
+    /dump/"$PROJECT"
 
-  echo "Restore complete"
+  # Opsional: Hapus dump di dalam container setelah selesai
+  docker exec "$CONTAINER" rm -rf /dump
+
+  echo "✅ Restore complete"
 
 else
-  echo "Usage:"
-  echo "./restore-db.sh <project> postgres|mongo"
+  echo "❌ Error: Invalid type '$TYPE'. Use 'postgres' or 'mongo'."
+  exit 1
 fi
+
+echo "--------------------------------------------------------------------------------"

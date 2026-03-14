@@ -1,6 +1,28 @@
 #!/usr/bin/env bash
 
-echo "Running Database Containers"
-echo "---------------------------"
+# --- BANNER ASCII HARDCODED ---
+clear
+cat << "EOF"
+ ██▓███   ▄▄▄       █    ██   ██████      ██████  ▄▄▄       ██▓  ▄▄▄█████▓ ▒█████  
+▓██░  ██▒▒████▄     ██  ▓██▒▒██    ▒    ▒██    ▒ ▒████▄    ▓██▒  ▓  ██▒ ▓▒▒██▒  ██▒
+▓██░ ██▓▒▒██  ▀█▄  ▓██  ▒██░░ ▓██▄      ░ ▓██▄   ▒██  ▀█▄  ▒██░  ▒ ▓██░ ▒░▒██░  ██▒
+▒██▄█▓▒ ▒░██▄▄▄▄██ ▓▓█  ░██░  ▒   ██▒     ▒   ██▒░██▄▄▄▄██ ▒██░  ░ ▓██▓ ░ ▒██   ██░
+▒██▒ ░  ░ ▓█   ▓██▒▒▒█████▓ ▒██████▒▒   ▒██████▒▒ ▓█   ▓██▒░██████▒▒██▒ ░ ░ ████▓▒░
+▒▓▒░ ░  ░ ▒▒   ▓▒█░░▒▓▒ ▒ ▒ ▒ ▒▓▒ ▒ ░   ▒ ▒▓▒ ▒ ░ ▒▒   ▓▒█░░ ▒░▓  ░▒ ░░   ░ ▒░▒░▒░ 
+░▒ ░       ▒   ▒▒ ░░░▒░ ░ ░ ░ ░▒  ░ ░   ░ ░▒  ░ ░  ▒   ▒▒ ░░ ░ ▒  ░  ░      ░ ▒ ▒░ 
+░░         ░   ▒    ░░░ ░ ░ ░  ░  ░     ░  ░  ░    ░   ▒     ░ ░   ░      ░ ░ ░ ▒  
+               ░  ░   ░           ░           ░        ░  ░    ░  ░           ░ ░                                        
+EOF
+echo "---------------------------------------------------------------"
+echo "                RUNNING DATABASE CONTAINERS"
+echo "---------------------------------------------------------------"
 
-docker ps --format "table {{.Names}}\t{{.Ports}}"
+# Mengecek apakah ada container yang sedang jalan
+if [ -z "$(docker ps -q)" ]; then
+    echo "⚠️  No containers are currently running."
+else
+    # Menampilkan daftar container dengan format yang lebih rapi
+    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | sed 's/0.0.0.0://g'
+fi
+
+echo "---------------------------------------------------------------"
