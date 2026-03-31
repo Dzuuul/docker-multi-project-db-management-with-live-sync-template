@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# --- SHARED LIBRARY (auto-install tools) ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib.sh
+source "$SCRIPT_DIR/lib.sh"
+
 # --- BANNER ASCII HARDCODED ---
 clear
 cat << "EOF"
@@ -30,6 +35,13 @@ if [ -z "$DB" ]; then
   echo "  ./backup-remote.sh <project> <postgres|mongo> <host> <port> <user> <db_name>"
   echo ""
   exit 1
+fi
+
+# --- AUTO-INSTALL REQUIRED TOOLS ---
+if [ "$TYPE" == "mongo" ]; then
+    ensure_tools mongodump pv
+elif [ "$TYPE" == "postgres" ]; then
+    ensure_tools pg_dump pv
 fi
 
 mkdir -p "backup/$PROJECT"

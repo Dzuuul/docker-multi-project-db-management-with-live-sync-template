@@ -3,6 +3,11 @@
 set -e
 set -o pipefail
 
+# --- SHARED LIBRARY (auto-install tools) ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib.sh
+source "$SCRIPT_DIR/lib.sh"
+
 # --- BANNER ASCII HARDCODED ---
 clear
 cat << "EOF"
@@ -27,6 +32,13 @@ TYPE=$2
 if [ -z "$PROJECT" ] || [ -z "$TYPE" ]; then
   echo "Usage: ./sync-db.sh <project> <postgres|mongo>"
   exit 1
+fi
+
+# --- AUTO-INSTALL REQUIRED TOOLS ---
+if [ "$TYPE" == "mongo" ]; then
+    ensure_tools mongodump mongosh pv
+elif [ "$TYPE" == "postgres" ]; then
+    ensure_tools pv
 fi
 
 # Load Local Credentials if exists

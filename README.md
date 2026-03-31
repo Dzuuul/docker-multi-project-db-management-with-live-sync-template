@@ -26,63 +26,19 @@ A powerful, reusable template for developers to spawn isolated database environm
 
 ## Prerequisites & Installation
 
-Before running the scripts, ensure you have the necessary tools installed on your host machine.
+The only thing you need to install manually is **Docker** & **Docker Compose V2**.
 
-### 1. Essential Core
+> [!TIP]
+> **Client tools are installed automatically!** When you run `sync-db.sh` or `backup-live.sh`, the scripts will detect if `mongodump`, `mongosh`, `pv`, or `pg_dump` are missing and install them for you using your system's package manager (`apt`, `dnf`, `pacman`, or `brew`).
 
-- **Docker** & **Docker Compose V2**
+Supported auto-install platforms:
 
-### 2. Client Tools (Required for Sync/Backup)
-
-#### Ubuntu / Debian / WSL2
-
-```bash
-# Update repositories
-sudo apt update
-
-# Install PV (Pipe Viewer) for progress bars
-sudo apt install -y pv
-
-# Install Postgres Client
-sudo apt install -y postgresql-client
-
-# Install MongoDB Tools (mongosh, mongodump, mongorestore)
-wget -qO- https://www.mongodb.org/static/pgp/server-7.0.asc | sudo tee /etc/apt/trusted.gpg.d/server-7.0.asc
-echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
-sudo apt update
-sudo apt install -y mongodb-mongosh mongodb-database-tools
-```
-
-#### Arch Linux
-
-```bash
-sudo pacman -S docker docker-compose pv postgresql-libs
-yay -S mongodb-bin mongodb-tools-bin
-```
-
-#### MacOS (Homebrew)
-
-```bash
-brew install pv postgresql mongodb-community@7.0 mongosh mongodb-database-tools
-```
-
-#### Windows
-
-**Option A: Using WSL2 (Recommended)**
-Simply follow the **Ubuntu / Debian / WSL2** guide above inside your WSL2 terminal.
-
-**Option B: Native Windows (Git Bash + Chocolatey)**
-
-1. Install [Git Bash](https://gitforwindows.org/).
-2. Install [Chocolatey](https://chocolatey.org/install).
-3. Open PowerShell as Administrator and run:
-
-```powershell
-# Install PV, Postgres Client, and MongoDB Tools
-choco install -y pv postgresql17-client mongodb-database-tools mongosh
-```
-
-4. You can now run the `.sh` scripts directly from **Git Bash**.
+| Platform | Package Manager |
+| :--- | :--- |
+| Ubuntu / Debian / WSL2 | `apt` |
+| Fedora / RHEL / CentOS | `dnf` / `yum` |
+| Arch Linux | `pacman` (+ `yay`/`paru` for MongoDB) |
+| macOS | `brew` |
 
 ---
 
@@ -90,10 +46,12 @@ choco install -y pv postgresql17-client mongodb-database-tools mongosh
 
 ```text
 .
+├── lib.sh          # Shared library: auto-install tools
 ├── create-db.sh    # Create & Start a new DB stack
 ├── list-db.sh      # View all running stacks & ports
 ├── sync-db.sh      # Sync data from LIVE to LOCAL
 ├── backup-db.sh    # Backup local data
+├── backup-live.sh  # Backup from remote server
 ├── restore-db.sh   # Restore local data
 ├── remove-db.sh    # Remove project stack
 ├── data/           # Persistent DB files
