@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+set -o pipefail
 
 # --- BANNER ASCII HARDCODED ---
 clear
@@ -32,7 +33,7 @@ fi
 ENV_PATH="./data/$PROJECT/.env"
 if [ -f "$ENV_PATH" ]; then
     echo "📂 Local config found for '$PROJECT'. Loading credentials..."
-    export $(grep -v '^#' "$ENV_PATH" | sed 's/[[:space:]]*=[[:space:]]*/=/g' | xargs -d '\n')
+    eval "$(grep -v '^#' "$ENV_PATH" | grep -v '^\s*$' | sed 's/[[:space:]]*=[[:space:]]*/=/g' | sed 's/^/export /')"
 fi
 
 function progress() {
@@ -103,24 +104,30 @@ if [ "$TYPE" == "postgres" ]; then
     # Estimasi ukuran untuk progress bar
     progress "Estimating Database Size..."
     if [ -n "$LIVE_URI" ]; then
-        SIZE=$(psql "$LIVE_URI" -Atc "SELECT pg_database_size(current_database())" 2>/dev/null || echo 0)
+        SIZE=$(docker run --rm --network=host postgres:17 psql "$LIVE_URI" -Atc "SELECT pg_database_size(current_database())" 2>/dev/null || echo 0)
     else
-        SIZE=$(PGPASSWORD=$LIVE_PASS psql -h "$LIVE_HOST" -p "$LIVE_PORT" -U "$LIVE_USER" -d "$LIVE_DB" -Atc "SELECT pg_database_size('$LIVE_DB')" 2>/dev/null || echo 0)
+        SIZE=$(docker run --rm --network=host -e PGPASSWORD="$LIVE_PASS" postgres:17 psql -h "$LIVE_HOST" -p "$LIVE_PORT" -U "$LIVE_USER" -d "$LIVE_DB" -Atc "SELECT pg_database_size('$LIVE_DB')" 2>/dev/null || echo 0)
     fi
 
     BACKUP_FILE="$BACKUP_DIR/postgres_$TIMESTAMP.dump.gz"
     progress "Backing up LIVE (with Progress)..."
     if [ -n "$LIVE_URI" ]; then
-        pg_dump "$LIVE_URI" -F c 2>/dev/null | pv -s "$SIZE" | gzip > "$BACKUP_FILE"
+        docker run --rm --network=host postgres:17 pg_dump "$LIVE_URI" -F c | pv -s "$SIZE" | gzip > "$BACKUP_FILE"
     else
-        PGPASSWORD=$LIVE_PASS pg_dump -h "$LIVE_HOST" -p "$LIVE_PORT" -U "$LIVE_USER" -d "$LIVE_DB" -F c 2>/dev/null | pv -s "$SIZE" | gzip > "$BACKUP_FILE"
+        docker run --rm --network=host -e PGPASSWORD="$LIVE_PASS" postgres:17 pg_dump -h "$LIVE_HOST" -p "$LIVE_PORT" -U "$LIVE_USER" -d "$LIVE_DB" -F c | pv -s "$SIZE" | gzip > "$BACKUP_FILE"
+    fi
+
+    # Validasi backup file
+    if [ ! -s "$BACKUP_FILE" ]; then
+        echo -e "\n\033[1;31m[!] Backup file kosong. pg_dump kemungkinan gagal. Periksa koneksi dan kredensial.\033[0m"
+        exit 1
     fi
 
     L_USER=${DB_USER:-"postgres"}
     L_PASS=${DB_PASSWORD:-"postgres"}
 
     progress "Refreshing Local Database..."
-    PGPASSWORD=$L_PASS docker exec -i "$POSTGRES_CONTAINER" psql -h 127.0.0.1 -U "$L_USER" -d postgres -c "DROP DATABASE IF EXISTS $PROJECT; CREATE DATABASE $PROJECT;"
+    PGPASSWORD=$L_PASS docker exec -i "$POSTGRES_CONTAINER" psql -h 127.0.0.1 -U "$L_USER" -d postgres -c "DROP DATABASE IF EXISTS $PROJECT;" -c "CREATE DATABASE $PROJECT;"
     
     progress "Restoring to Local..."
     gunzip -c "$BACKUP_FILE" | PGPASSWORD=$L_PASS docker exec -i "$POSTGRES_CONTAINER" pg_restore -h 127.0.0.1 -U "$L_USER" -d "$PROJECT" --no-owner --no-privileges
