@@ -139,7 +139,7 @@ if [ "$TYPE" == "postgres" ]; then
     L_PASS=${DB_PASSWORD:-"postgres"}
 
     progress "Refreshing Local Database..."
-    PGPASSWORD=$L_PASS docker exec -i "$POSTGRES_CONTAINER" psql -h 127.0.0.1 -U "$L_USER" -d postgres -c "DROP DATABASE IF EXISTS $PROJECT;" -c "CREATE DATABASE $PROJECT;"
+    PGPASSWORD=$L_PASS docker exec -i "$POSTGRES_CONTAINER" psql -h 127.0.0.1 -U "$L_USER" -d postgres -c "DROP DATABASE IF EXISTS \"$PROJECT\";" -c "CREATE DATABASE \"$PROJECT\";"
     
     progress "Restoring to Local..."
     gunzip -c "$BACKUP_FILE" | PGPASSWORD=$L_PASS docker exec -i "$POSTGRES_CONTAINER" pg_restore -h 127.0.0.1 -U "$L_USER" -d "$PROJECT" --no-owner --no-privileges

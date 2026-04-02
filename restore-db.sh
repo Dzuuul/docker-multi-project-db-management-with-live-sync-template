@@ -82,7 +82,7 @@ if [ "$TYPE" == "postgres" ]; then
 
   # Drop and recreate database (matching sync-db scheme)
   echo "🔄 Refreshing local database '$PROJECT'..."
-  PGPASSWORD=$L_PASS docker exec -i "$CONTAINER" psql -h 127.0.0.1 -U "$L_USER" -d postgres -c "DROP DATABASE IF EXISTS $PROJECT;" -c "CREATE DATABASE $PROJECT;"
+  PGPASSWORD=$L_PASS docker exec -i "$CONTAINER" psql -h 127.0.0.1 -U "$L_USER" -d postgres -c "DROP DATABASE IF EXISTS \"$PROJECT\";" -c "CREATE DATABASE \"$PROJECT\";"
 
   # Restore process
   if [[ "$LATEST_BACKUP" == *.gz ]]; then
