@@ -162,7 +162,7 @@ elif [ "$TYPE" == "mongo" ]; then
     SIZE=${SIZE%%.*}
 
     BACKUP_FILE="$BACKUP_DIR/mongo_$TIMESTAMP.archive.gz"
-    progress "Backing up LIVE (with Progress)..."
+    progress "Backing up LIVE (with Mongo)..."
     if [ -n "$LIVE_URI" ]; then
         mongodump --uri="$LIVE_URI" --db "$LIVE_DB" --archive --quiet | pv -s "$SIZE" | gzip > "$BACKUP_FILE"
     else

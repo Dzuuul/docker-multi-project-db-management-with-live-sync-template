@@ -80,10 +80,39 @@ EOT
 
 echo "Credential saved to: $ENV_FILE"
 
-# Run Docker Compose dengan variabel yang sudah di-set
-export DB_NAME DB_USER DB_PASSWORD PG_PORT MONGO_USER MONGO_PASSWORD MONGO_PORT
+# --- CREATE PROJECT DOCKER COMPOSE FILE ---
+PROJECT_COMPOSE="$PROJECT_DIR/docker-compose.yml"
+cat << EOT > "$PROJECT_COMPOSE"
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: "$DB_USER"
+      POSTGRES_PASSWORD: "$DB_PASSWORD"
+      POSTGRES_DB: "$DB_NAME"
+    ports:
+      - "$PG_PORT:5432"
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
 
-docker compose -p "db_$DB_NAME" up -d
+  mongo:
+    image: mongo:7
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "$MONGO_USER"
+      MONGO_INITDB_ROOT_PASSWORD: "$MONGO_PASSWORD"
+    ports:
+      - "$MONGO_PORT:27017"
+    volumes:
+      - ./mongo:/data/db
+EOT
+
+echo "Docker Compose file generated at: $PROJECT_COMPOSE"
+
+echo "🚀 Starting database containers..."
+# Run Docker Compose from inside the project directory to ensure relative paths are stable
+cd "$PROJECT_DIR" && docker compose up -d
 
 echo ""
 echo "✅ Database stack '$DB_NAME' created successfully!"
