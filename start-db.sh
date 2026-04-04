@@ -40,8 +40,9 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 
 echo "🚀 Starting containers for project: $DB_NAME..."
-# Load env variables and run docker compose
-docker compose -p "db_$DB_NAME" --env-file "$ENV_FILE" up -d
+# Go to project directory and run its local compose file
+# This is much safer for WSL persistence as it uses paths relative to the compose file itself
+cd "$PROJECT_DIR" && docker compose -p "$DB_NAME" up -d
 
 echo ""
 echo "✅ Database stack '$DB_NAME' is back online!"

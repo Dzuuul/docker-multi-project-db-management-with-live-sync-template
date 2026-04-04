@@ -106,13 +106,19 @@ services:
       - "$MONGO_PORT:27017"
     volumes:
       - ./mongo:/data/db
+
+# Use 'docker compose -p ${DB_NAME}' when running this from the root
+# Or better: use the start-db.sh script which handles everything correctly.
+# NOTE: If using WSL, ensure data is stored in the Linux filesystem (e.g., /home/user/) 
+# rather than /mnt/c/ to avoid permission issues and performance degradation.
 EOT
 
 echo "Docker Compose file generated at: $PROJECT_COMPOSE"
 
 echo "🚀 Starting database containers..."
 # Run Docker Compose from inside the project directory to ensure relative paths are stable
-cd "$PROJECT_DIR" && docker compose up -d
+# We specify the project name (-p) to be consistent with start-db.sh
+cd "$PROJECT_DIR" && docker compose -p "$DB_NAME" up -d
 
 echo ""
 echo "✅ Database stack '$DB_NAME' created successfully!"
