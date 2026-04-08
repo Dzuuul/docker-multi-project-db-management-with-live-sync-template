@@ -160,13 +160,37 @@ REPO
 }
 
 # ────────────────────────────────────────────────────────────────
+#  Setup PostgreSQL APT repo
+# ────────────────────────────────────────────────────────────────
+_setup_postgresql_apt_repo() {
+    local codename
+    codename=$(lsb_release -cs 2>/dev/null || echo "jammy")
+
+    echo "  🔑 Setting up PostgreSQL repository..."
+    
+    # Install dependencies
+    sudo apt-get install -y gnupg wget &>/dev/null
+
+    # Add GPG key
+    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo tee /etc/apt/trusted.gpg.d/pgdg.asc >/dev/null
+
+    # Add repo
+    echo "deb http://apt.postgresql.org/pub/repos/apt ${codename}-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+
+    sudo apt-get update -qq
+}
+
+# ────────────────────────────────────────────────────────────────
 #  Install postgresql-client
 # ────────────────────────────────────────────────────────────────
 _install_pg_client() {
     local pm=$(_detect_pkg_manager)
     echo "  📦 Installing postgresql-client..."
     case "$pm" in
-        apt)    sudo apt-get install -y postgresql-client ;;
+        apt)
+            _setup_postgresql_apt_repo
+            sudo apt-get install -y postgresql-client
+            ;;
         dnf|yum) sudo "$pm" install -y postgresql ;;
         pacman) sudo pacman -S --noconfirm postgresql-libs ;;
         brew)   brew install postgresql ;;
