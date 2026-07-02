@@ -27,7 +27,7 @@ if [ -z "$DB_NAME" ]; then
   exit 1
 fi
 
-PROJECT="db_$DB_NAME"
+PROJECT="$DB_NAME"
 
 echo "Stopping and removing containers for project: $PROJECT..."
 docker compose -p "$PROJECT" down

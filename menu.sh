@@ -24,15 +24,16 @@ while true; do
     echo " [1] List Running Databases       (list-db.sh)"
     echo " [2] Create New Database Stack    (create-db.sh)"
     echo " [3] Start Existing Stack         (start-db.sh)"
-    echo " [4] Backup Database (Docker)     (backup-db.sh)"
-    echo " [5] Backup Database (Remote)     (backup-live.sh)"
-    echo " [6] Restore Database             (restore-db.sh)"
-    echo " [7] Sync Live to Local           (sync-db.sh)"
-    echo " [8] Remove Database Stack        (remove-db.sh)"
-    echo " [9] Restore to Remote (URI)     (restore-uri.sh)"
+    echo " [4] Stop Existing Stack          (stop-db.sh)"
+    echo " [5] Backup Database (Docker)     (backup-db.sh)"
+    echo " [6] Backup Database (Remote)     (backup-live.sh)"
+    echo " [7] Restore Database             (restore-db.sh)"
+    echo " [8] Sync Live to Local           (sync-db.sh)"
+    echo " [9] Remove Database Stack        (remove-db.sh)"
+    echo " [10] Restore to Remote (URI)    (restore-uri.sh)"
     echo " [0] Exit"
     echo "--------------------------------------------------------------------------------"
-    read -p " Pilih opsi [0-9]: " OPTION
+    read -p " Pilih opsi [0-10]: " OPTION
 
     case $OPTION in
         1)
@@ -50,30 +51,35 @@ while true; do
             read -p "Tekan [Enter] untuk kembali..."
             ;;
         4)
+            read -p "Nama Project yang ingin dihentikan: " DNAME
+            ./stop-db.sh "$DNAME"
+            read -p "Tekan [Enter] untuk kembali..."
+            ;;
+        5)
             read -p "Nama Project: " PNAME
             read -p "Tipe (postgres/mongo): " TNAME
             ./backup-db.sh "$PNAME" "$TNAME"
             read -p "Tekan [Enter] untuk kembali..."
             ;;
-        5)
+        6)
             echo "Format: <project> <type> <host> <port> <user> <db>"
             read -p "Masukkan semua parameter (pisahkan spasi): " PARAMS
             ./backup-live.sh $PARAMS
             read -p "Tekan [Enter] untuk kembali..."
             ;;
-        6)
+        7)
             read -p "Nama Project: " PNAME
             read -p "Tipe (postgres/mongo): " TNAME
             ./restore-db.sh "$PNAME" "$TNAME"
             read -p "Tekan [Enter] untuk kembali..."
             ;;
-        7)
+        8)
             read -p "Nama Project: " PNAME
             read -p "Tipe (postgres/mongo): " TNAME
             ./sync-db.sh "$PNAME" "$TNAME"
             read -p "Tekan [Enter] untuk kembali..."
             ;;
-        8)
+        9)
             read -p "Nama Database yang akan dihapus: " DNAME
             read -p "Hapus folder data juga? (y/n): " CONFIRM
             if [ "$CONFIRM" = "y" ]; then
@@ -83,7 +89,7 @@ while true; do
             fi
             read -p "Tekan [Enter] untuk kembali..."
             ;;
-        9)
+        10)
             read -p "Nama Project: " PNAME
             read -p "Tipe (postgres/mongo): " TNAME
             read -p "Gunakan SSH Tunnel? (y/N): " USE_SSH
